@@ -14,7 +14,9 @@ def prefix(client, message):
 
   return prefix 
 
-client = commands.Bot(command_prefix=prefix)
+intents = discord.Intents().all()
+
+client = commands.Bot(command_prefix=prefix, intents = intents)
 
 colors = [0x1abc9c, 0x11806a, 0x2ecc71, 0x1f8b4c, 0x3498db, 0x206694]
 
@@ -337,6 +339,31 @@ async def dyinga(author, message):
   else:
     pass
 
+@client.event
+async def on_member_join(member):
+  if str(member.guild.id) == "856098593924186125":
+    try:
+      await buyo(member, 0, "reward box")
+      await money_change(member, 20000, "bank")
+      await member.send('You have received one reward box and $20000. Thanks for joining the official support server!')
+    except:
+      pref = 'h.'
+      await create_account(member)
+      await buyo(member, 0, "reward box")
+      await money_change(member, 20000, "bank")
+      await member.send('You have received one reward box and $20000. Thanks for joining the official support server!')
+      em = discord.Embed(title='A quick guide to the Mockingjay Discord bot', description='[Click this link to join the support server and get some rewards](https://discord.gg/SptuDpcvrX)', color=random.choice(colors))
+      em.add_field(name='1. Get to know yourself.', value=f'Type {pref}profile to view your stats, including your district of residence.', inline=False)
+      em.add_field(name='2. Try getting a job in your district. You can work every 30 minutes. If you are lucky, your boss will give you a travel pass.', value=f'Type {pref}joblist to view jobs available in your district and type {pref}job <number> to choose a job. For example, if I were to choose the job Jeweller, I would type {pref}job 1', inline=False)
+      em.add_field(name='3. Earn some money, get travel passes and travel to other districts to get tools such as fishing rods and bows. Tools like these allow you to hunt, fish, etc.', value=f'Type {pref}travel <district number> to travel to a district and use the {pref}buy command to buy stuff.', inline=False)
+      em.add_field(name='4. Collect tesserae.', value=f'Bread and beef can be collected every one hour. Type {pref}tesserae to collect it.', inline=False)
+      em.add_field(name=f'5. Use the {pref}services command from time to time to earn extra cash.', value='You can contribute your services to the nation of Panem by volunteering for dangerous jobs. But hey, if you succeed, you get paid well...', inline=False)
+      em.add_field(name=f'6. Use the {pref}hgame command, if you  want to risk it.', value='You can join interactive Hunger Games sessions once in a while. Make sure your knowledge of the Hunger Games books and films are stitched up tight!', inline=False)
+      em.set_footer(text='Bot created by AnakinSkywaler#3739', icon_url=client.user.avatar_url)
+      await member.send(embed=em)
+  else:
+    pass
+
 @client.command(aliases=['prefix'])
 async def prefixo(ctx, prefixa):
   with open('prefixes.json', 'r') as f:
@@ -366,6 +393,30 @@ async def credits(ctx):
   em.set_thumbnail(url=client.user.avatar_url)
   em.color=random.choice(colors)
   await ctx.send(embed=em)
+
+@client.command()
+async def devs(ctx):
+  if ctx.author.id != 746646972483502140:
+    await ctx.send('You do not have permission to use this feature!')
+  else:
+    with open('bank.json', 'r') as f:
+      a = json.load(f)
+    
+    with open('inventory.json', 'r') as f:
+      b = json.load(f)
+
+    with open('prefixes.json', 'r') as f:
+      c = json.load(f)
+
+    em = discord.Embed(title='Stats for Mockingjay', description='Developer-only feature!', color=random.choice(colors))
+    em.add_field(name='No. of users', value=len(a), inline=False)
+    em.add_field(name='No. of servers', value=len(c), inline=False)
+    print(a)
+    print('----------------------------------------------------')
+    print(b)
+    print('----------------------------------------------------')
+    print(c)
+    await ctx.send(embed=em)
 
 @client.command()
 async def lolol(ctx):
@@ -415,7 +466,7 @@ async def create(ctx):
 
 @client.command(aliases=['Invite'])
 async def invite(ctx):
-  em = discord.Embed(title='Hit this link to invite me to your server!', description = 'https://discord.com/api/oauth2/authorize?client_id=855240212800339978&permissions=2148005952&scope=bot', color=random.choice(colors))
+  em = discord.Embed(title='Hit this link to invite me to your server!', description = 'https://discord.com/api/oauth2/authorize?client_id=855240212800339978&permissions=259846044736&scope=bot', color=random.choice(colors))
   em.set_thumbnail(url=client.user.avatar_url)
   await ctx.send(embed=em)
 
@@ -1096,7 +1147,6 @@ async def hgame(ctx):
             for item in templist:
               if item[4:] == f'[{dis}]' or item[3:] == f'[{dis}]':
                 templist.remove(item)
-            templist.append(f'{random.choice(tributes[int(dis)])}[{dis}]')
             await ctx.send(f'You are betting on two District {dis} tributes: {tributes[int(dis)][0]} and {tributes[int(dis)][1]}')
             for item in range(6):
               num = random.choice(templist)
@@ -1299,15 +1349,15 @@ async def map(ctx):
 
 @client.command()
 async def help(ctx):
-  em = discord.Embed(title='Showing a list of commands for Mockingjay', description='[Hit this link to join the Mockingjay Support Server!](https://discord.gg/CtAT7sDqxH)', color=random.choice(colors)).add_field(name="Hunt for food. You're risking your life though...", value='`hunt`', inline=False).add_field(name='Forage for food. Sometimes you might find something else...', value="`forage`", inline=False).add_field(name="Work and earn some money.", value="`work`", inline=False).add_field(name="Get a job", value="`job <index of job>`", inline=False).add_field(name="Show a list of jobs available", value="`joblist`", inline=False).set_thumbnail(url=client.user.avatar_url)
+  em = discord.Embed(title='Showing a list of commands for Mockingjay', description='[Hit this link to join the Mockingjay Support Server!](https://discord.gg/CtAT7sDqxH)', color=random.choice(colors)).add_field(name="Hunt for food. You're risking your life though...", value='`hunt`', inline=False).add_field(name='Forage for food. Sometimes you might find something else...', value="`forage`", inline=False).add_field(name="Work and earn some money.", value="`work`", inline=False).add_field(name="Get a job", value="`job <index of job>`", inline=False).add_field(name="Show a list of jobs available", value="`joblist`", inline=False).add_field(name="Go for a nice fishing trip. Get some tasty fish and watch out for crocodiles!", value="`fish`", inline=False).add_field(name="Use an item.", value="`use <item name>`", inline=False).set_thumbnail(url=client.user.avatar_url)
 
-  em1 = discord.Embed(title='Showing a list of commands for Mockingjay', description='[If you join the official support server, you will be rewarded with some goodies!](https://discord.gg/CtAT7sDqxH)', color=random.choice(colors)).add_field(name="Withdraw cash", value="`withdraw <amt>` or `with <amt>`", inline=False).add_field(name="Deposit cash from you wallet", value="`deposit <amt>` or `dep <amt>`", inline=False).add_field(name="Show items in your inventory", value="`inventory` or `inv`", inline=False).add_field(name="Buy stuff", value="`buy <amt> <item name>`", inline=False).add_field(name="Sell stuff. Note: You can only sell items for half the price they're obtained for.", value="`sell <amt> <item name>`", inline=False).set_thumbnail(url=client.user.avatar_url)
+  em1 = discord.Embed(title='Showing a list of commands for Mockingjay', description='[If you join the official support server, you will be rewarded with some goodies!](https://discord.gg/CtAT7sDqxH)', color=random.choice(colors)).add_field(name="Withdraw cash", value="`withdraw <amt>` or `with <amt>`", inline=False).add_field(name="Deposit cash from you wallet", value="`deposit <amt>` or `dep <amt>`", inline=False).add_field(name="Show items in your inventory", value="`inventory` or `inv`", inline=False).add_field(name="Buy stuff", value="`buy <amt> <item name>`", inline=False).add_field(name="Sell stuff. Note: You can only sell items for half the price they're obtained for.", value="`sell <amt> <item name>`", inline=False).add_field(name="Give some items to your friends.", value="`give <amt> <item>` or `give <cash_amt>`", inline=False).set_thumbnail(url=client.user.avatar_url)
 
-  em2 = discord.Embed(title='Showing a list of commands for Mockingjay', description='[Found a bug while playing? Join the official support server and report it!](https://discord.gg/CtAT7sDqxH)', color=random.choice(colors)).add_field(name="Travel to another district. If you have a travel pass, that is...", value="`travel <district number>`", inline=False).add_field(name="Eat items to restore your HP", value="`eat <item name>`", inline=False).add_field(name="Shows a list of stuff you can buy.", value="`shop`", inline=False).add_field(name="View stats for your account.", value="`profile`", inline=False).add_field(name="Create an account", value="`create`", inline=False).add_field(name="View command cooldowns", value="`cooldown` or `cd`", inline=False).add_field(name="Change the server prefix", value="`prefix`", inline=False).set_thumbnail(url=client.user.avatar_url)
+  em2 = discord.Embed(title='Showing a list of commands for Mockingjay', description='[Found a bug while playing? Join the official support server and report it!](https://discord.gg/CtAT7sDqxH)', color=random.choice(colors)).add_field(name="Travel to another district. If you have a travel pass, that is...", value="`travel <district number>`", inline=False).add_field(name="Eat items to restore your HP", value="`eat <item name>`", inline=False).add_field(name="Shows a list of stuff you can buy.", value="`shop`", inline=False).add_field(name="Contribute your labor to Panem! You will be assigned to conduct a dangerous mission. If you survive, you get paid a handsome amount of cash and maybe a travel pass or two", value="`service`", inline=False).add_field(name="View command cooldowns", value="`cooldown` or `cd`", inline=False).set_thumbnail(url=client.user.avatar_url)
 
-  em3 = discord.Embed(title='Showing a list of commands for Mockingjay', description='The feature that took the longest for the devs to create was hgame...', color=random.choice(colors)).add_field(name="Go for a nice fishing trip. Get some tasty fish and watch out for crocodiles!", value="`fish`", inline=False).add_field(name="Give some items to your friends.", value="`give <amt> <item>` or `give <cash_amt>`", inline=False).add_field(name="Start an interactive Hunger Games session", value="`hgame`", inline=False).add_field(name="Shows a map of Panem", value="`map`", inline=False).add_field(name="Get the latency of the bot.", value="`ping`", inline=False).add_field(name="Get some fun facs about the Hunger Games universe.", value="`facts`", inline=False).add_field(name="Get the latency of the bot.", value="`ping`", inline=False).set_thumbnail(url=client.user.avatar_url)
+  em4 = discord.Embed(title='Showing a list of commands for Mockingjay', description='The feature that took the longest for the devs to create was hgame...', color=random.choice(colors)).add_field(name="Shows a map of Panem", value="`map`", inline=False).add_field(name="Get the latency of the bot.", value="`ping`", inline=False).add_field(name="Get some fun facs about the Hunger Games universe.", value="`facts`", inline=False).add_field(name="Get the latency of the bot.", value="`ping`", inline=False).add_field(name="Get the invite link for this bot", value="`invite`", inline=False).add_field(name="Get to know the people who have worked hard to bring you this bot.", value="`credits`", inline=False).add_field(name="Change the server prefix", value="`prefix`", inline=False).set_thumbnail(url=client.user.avatar_url)
 
-  em4 = discord.Embed(title='Showing a list of commands for Mockingjay', description='This bot was initially created using Repl.it and hosted on Heroku upon completion.', color=random.choice(colors)).add_field(name="Contribute your labor to Panem! You will be assigned to conduct a dangerous mission. If you survive, you get paid a handsome amount of cash and maybe a travel pass or two", value="`service`", inline=False).add_field(name="Add someone as your successor. When you die, 70% of your wealth will be given to them.", value="`will <@someone>`", inline=False).add_field(name="Use an item.", value="`use <item name>`", inline=False).add_field(name="View your global ranking for wealth.", value="`leaderboard` or `lb`", inline=False).add_field(name="Get information for a certain district", value="`district <district number>`", inline=False).add_field(name="Get the invite link for this bot", value="`invite`", inline=False).set_thumbnail(url=client.user.avatar_url)
+  em3 = discord.Embed(title='Showing a list of commands for Mockingjay', description='This bot was initially created using Repl.it and hosted on Heroku upon completion.', color=random.choice(colors)).add_field(name="Start an interactive Hunger Games session", value="`hgame`", inline=False).add_field(name="View stats for your account.", value="`profile`", inline=False).add_field(name="Create an account", value="`create`", inline=False).add_field(name="Add someone as your successor. When you die, 70% of your wealth will be given to them.", value="`will <@someone>`", inline=False).add_field(name="View your global ranking for wealth.", value="`leaderboard` or `lb`", inline=False).add_field(name="Get information for a certain district", value="`district <district number>`", inline=False).set_thumbnail(url=client.user.avatar_url)
   
   embeds = [em, em1, em2, em3, em4]
 
