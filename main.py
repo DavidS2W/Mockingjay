@@ -638,11 +638,16 @@ dice_pics = {'<:d6:806019379774226452>': 6, '<:d5:810328229444452363>': 5, '<:d4
 @client.command()
 @commands.cooldown(1, 10, commands.BucketType.user)
 async def use(ctx, *, arg1):
+  boxcount = check_item_value(ctx.author, "reward box")
+  compcount = check_item_value(ctx.author, "computer")
   if arg1.lower() not in usables:
     await ctx.send("You can't use this item!")
   else:
     unboxing_words = ['Amazing! You found one', 'Wow, in the box is one', 'You found one', 'You obtained one']
     if arg1.lower() == 'reward box':
+      if boxcount < 1:
+        await ctx.send("You don't have a reward box!")
+        return
       await ctx.send('Opening reward box...')
       items = random.randint(3, 7)
       templist = []
@@ -655,6 +660,9 @@ async def use(ctx, *, arg1):
       await useo(ctx.author, "reward box")
       await ctx.send(f'You have obtained {items} items from the reward box!')
     elif arg1.lower() == "computer":
+      if compcount < 1:
+        await ctx.send("You don't have a computer!")
+        return
       await ctx.send('Would you like to obtain a travel pass or hack?\nRespond with `1` for travel pass and `2` for hack.')
       def check(m):
         return m.author == ctx.message.author
