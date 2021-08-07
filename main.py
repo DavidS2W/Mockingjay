@@ -6,17 +6,9 @@ import json
 import time
 from disputils import BotEmbedPaginator
 
-def prefix(client, message):
-  with open('prefixes.json', 'r') as f:
-    pref = json.load(f)
-    
-    prefix = pref[str(message.guild.id)]
-
-  return prefix 
-
 intents = discord.Intents().all()
 
-client = commands.Bot(command_prefix=prefix, intents = intents)
+client = commands.Bot(command_prefix="h.", intents = intents)
 
 colors = [0x1abc9c, 0x11806a, 0x2ecc71, 0x1f8b4c, 0x3498db, 0x206694]
 
@@ -55,26 +47,6 @@ hp_food = {"milk": 20, "elk": 50, "groosling": 50, "apple": 20, "beef": 60, "bre
 
 forage_stuff = ['katniss', 'wild fruit', 'apple', 'groosling nest']
 
-@client.event
-async def on_guild_join(guild):
-  with open('prefixes.json', 'r') as f:
-    prefixes = json.load(f)
-
-  prefixes[str(guild.id)] = 'h.'
-
-  with open('prefixes.json', 'w') as f:
-    json.dump(prefixes, f, indent=4)
-
-@client.event
-async def on_guild_remove(guild):
-  with open('prefixes.json', 'r') as f:
-    prefixes = json.load(f)
-
-  prefixes.pop(str(guild.id))
-
-  with open('prefixes.json', 'w') as f:
-    json.dump(prefixes, f, indent=4)
-
 client.remove_command('help')
 
 @client.event
@@ -102,7 +74,7 @@ async def on_command_error(ctx, error):
   if isinstance(error, commands.CommandNotFound):
     pass
   elif isinstance(error, commands.CommandInvokeError):
-    if ctx.message.content.startswith(f'{prefix(client, ctx.message)}give') or ctx.message.content.startswith(f'{prefix(client, ctx.message)}profile') or ctx.message.content.startswith(f'{prefix(client, ctx.message)}hgame') or ctx.message.content.startswith(f'{prefix(client, ctx.message)}buy'):
+    if ctx.message.content.startswith(f'h.give') or ctx.message.content.startswith(f'h.profile') or ctx.message.content.startswith(f'h.hgame') or ctx.message.content.startswith(f'h.buy'):
       pass
     else:
       with open('bank.json', 'r') as f:
@@ -111,7 +83,8 @@ async def on_command_error(ctx, error):
         await ctx.send(':warning: Something went wrong.\nYou may have specified invalid arguments.')
         raise error
       else:
-        await ctx.send(f'Please create an account by typing `{prefix(client, ctx.message)}create`!')
+        await ctx.send(f'Please create an account by typing `h.create`!')
+        raise error
   elif isinstance(error, commands.CommandOnCooldown):
     await ctx.send(f':snowflake: You are on cooldown, please try again in {timecon(round(error.retry_after))}')
   else:
@@ -364,23 +337,6 @@ async def on_member_join(member):
   else:
     pass
 
-@client.command(aliases=['prefix'])
-async def prefixo(ctx, prefixa):
-  with open('prefixes.json', 'r') as f:
-    prefixes = json.load(f)
-
-  prefixes[str(ctx.guild.id)] = prefixa
-
-  with open('prefixes.json', 'w') as f:
-    json.dump(prefixes, f, indent=4)
-
-  await ctx.send(f'The prefix for this server has been changed to `{prefixa}.`')
-
-@prefixo.error
-async def prefixo_error(ctx, error):
-  if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please enter the new prefix.\nExample: {prefix(client, ctx.message)}prefix *')
-
 @client.command()
 async def credits(ctx):
   em = discord.Embed()
@@ -449,7 +405,7 @@ async def create(ctx):
     b = json.load(f)
 
   if str(ctx.author.id) not in b:
-    pref = prefix(client, ctx.message)
+    pref = "h."
     await create_account(ctx.author)
     await ctx.send('Account created! Please check your DMS for a quick guide to this bot!')
     em = discord.Embed(title='A quick guide to the Mockingjay Discord bot', description='[Click this link to join the support server and get some rewards](https://discord.gg/SptuDpcvrX)', color=random.choice(colors))
@@ -493,14 +449,14 @@ async def buy(ctx, arg1, *, product):
 @buy.error
 async def buy_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify the item you want to buy after the buy command.\nExample: {prefix(client, ctx.message)}buy 3 bow')
+    await ctx.send(f'Please specify the item you want to buy after the buy command.\nExample: h.buy 3 bow')
   else:
     with open('bank.json', 'r') as f:
         b = json.load(f)
     if str(ctx.author.id) in b:
-      await ctx.send(f'Please specify the all of the required arguments after the command.\nExample: {prefix(client, ctx.message)}buy 3 bow')
+      await ctx.send(f'Please specify the all of the required arguments after the command.\nExample: h.buy 3 bow')
     else:
-      await ctx.send(f'Please create an account by typing `{prefix(client, ctx.message)}create`!')
+      await ctx.send(f'Please create an account by typing `h.create`!')
 
 @client.command(aliases = ['Hunt'])
 @commands.cooldown(1, 10, commands.BucketType.user) 
@@ -576,14 +532,14 @@ async def profile_error(ctx, error):
       em.set_thumbnail(url=ctx.author.avatar_url)
       await ctx.send(embed=em)
     except:
-      await ctx.send(f'Please create an account by typing `{prefix(client, ctx.message)}create` first!')
+      await ctx.send(f'Please create an account by typing `h.create` first!')
   elif isinstance(error, commands.CommandInvokeError):
     with open('bank.json', 'r') as f:
       inv = json.load(f)
     if str(ctx.author.id) not in inv:
-      await ctx.send(f'Please create an account by typing `{prefix(client, ctx.message)}create` first!')
+      await ctx.send(f'Please create an account by typing `h.create` first!')
     elif str(ctx.author.id) in inv:
-      await ctx.send(f'Please ask your friend to create an account by typing `{prefix(client, ctx.message)}create` first!')
+      await ctx.send(f'Please ask your friend to create an account by typing `h.create` first!')
 
 @client.command(aliases = ['Travel'])
 @commands.cooldown(1.0, 60, commands.BucketType.user) 
@@ -631,23 +587,18 @@ async def travel(ctx, arg1):
 @travel.error
 async def travel_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify the district you want to travel to after the travel command.\nExample: {prefix(client, ctx.message)}travel 3')
+    await ctx.send(f'Please specify the district you want to travel to after the travel command.\nExample: h.travel 3')
 
 dice_pics = {'<:d6:806019379774226452>': 6, '<:d5:810328229444452363>': 5, '<:d4:806019355996979231>': 4, '<:d3:810328197484118017>': 3, '<:d2:806019324804333568>': 2, '<:d1:810328161127497778>': 1}
 
 @client.command()
 @commands.cooldown(1, 10, commands.BucketType.user)
 async def use(ctx, *, arg1):
-  boxcount = check_item_value(ctx.author, "reward box")
-  compcount = check_item_value(ctx.author, "computer")
   if arg1.lower() not in usables:
     await ctx.send("You can't use this item!")
   else:
     unboxing_words = ['Amazing! You found one', 'Wow, in the box is one', 'You found one', 'You obtained one']
     if arg1.lower() == 'reward box':
-      if boxcount < 1:
-        await ctx.send("You don't have a reward box!")
-        return
       await ctx.send('Opening reward box...')
       items = random.randint(3, 7)
       templist = []
@@ -660,9 +611,6 @@ async def use(ctx, *, arg1):
       await useo(ctx.author, "reward box")
       await ctx.send(f'You have obtained {items} items from the reward box!')
     elif arg1.lower() == "computer":
-      if compcount < 1:
-        await ctx.send("You don't have a computer!")
-        return
       await ctx.send('Would you like to obtain a travel pass or hack?\nRespond with `1` for travel pass and `2` for hack.')
       def check(m):
         return m.author == ctx.message.author
@@ -750,7 +698,7 @@ async def use(ctx, *, arg1):
 @use.error
 async def use_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify the item you want to use after the command. So far, only `reward boxes` and `computers` can be used.\nExample: {prefix(client, ctx.message)}use reward box')
+    await ctx.send(f'Please specify the item you want to use after the command. So far, only `reward boxes` and `computers` can be used.\nExample: h.use reward box')
     
 @client.command(aliases = ['Forage'])
 @commands.cooldown(1, 15, commands.BucketType.user) 
@@ -796,7 +744,7 @@ async def eat(ctx, *, arg1):
 @eat.error
 async def eat_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify the item you want to eat after the eat command.\nExample: {prefix(client, ctx.message)}eat katniss')
+    await ctx.send(f'Please specify the item you want to eat after the eat command.\nExample: h.eat katniss')
 
 @client.command(aliases = ['dep', 'Deposit'])
 async def deposit(ctx, arg1):
@@ -819,7 +767,7 @@ async def deposit(ctx, arg1):
 @deposit.error
 async def deposit_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify the amount of cash you want to deposit after the command.\nExample: {prefix(client, ctx.message)}deposit 2000')
+    await ctx.send(f'Please specify the amount of cash you want to deposit after the command.\nExample: h.deposit 2000')
 
 @client.command(aliases = ['with', 'Withdraw'])
 async def withdraw(ctx, arg1):
@@ -842,7 +790,7 @@ async def withdraw(ctx, arg1):
 @withdraw.error
 async def withdraw_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify the amount of cash you want to withdraw after the command.\nExample: {prefix(client, ctx.message)}withdraw 2000')
+    await ctx.send(f'Please specify the amount of cash you want to withdraw after the command.\nExample: h.withdraw 2000')
 
 @client.command(aliases = ['Sell'])
 async def sell(ctx, arg1, *, itema):
@@ -859,18 +807,18 @@ async def sell(ctx, arg1, *, itema):
       a = int(arg1)
       await ctx.send("Sorry mate. You can't buy or sell this item.")
     except:
-      await ctx.send(f'Please specify all of the required arguments!\nExample: {prefix(client, ctx.message)}sell 3 bow')
+      await ctx.send(f'Please specify all of the required arguments!\nExample: h.sell 3 bow')
 
 @sell.error
 async def sell_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify all of the required arguments!\nExample: {prefix(client, ctx.message)}sell 3 bow')
+    await ctx.send(f'Please specify all of the required arguments!\nExample: h.sell 3 bow')
 
 worklist = {"Jeweller": {"district": 1, "trivia": ["Diamond exists 150 - 250km below ground.", "Don't mess this one up, it's for President Snow's wife.", "Aw man, the gemcutter's broken again!", "Make sure the gemstones aligned on this bracelet are symmetrical.", "Another shipment of bracelets to the Capitol."], "pay": 2000, "die": ["cut yourself by accident with a diamond cutter", "messed up a bracelet meant for President Snow's wife", "burned yourself with a soldering tool"]}, "Seamstress": {"district": 1, "trivia": ["A thimble is the best form of protection against pricked thumbs.", "The only permitted material for towels here are silk.", "Use the seam ripper to open thse seams.", "These dresses have to be fixed.", "Use an industrial sewing machine for this one - it's made from armourweave."], "pay": 2000, "die": ["pricked your carotid artery", "had a needle poke right through your finger", "got scratched by the sewing machine LOL"]}, "Blacksmith": {"district": 2, "trivia": ["You can quench your blades in water or oil.", "These blades will be littered around the Arena, hopefully not impaling the unwary challenger.", "Can you place an order for more steel?", "I'm so damn tired today.", "There's some sign of chipping on this blade."], "pay": 1000, "die": ["burned yourself when quenching your blade", "almost cut your hand off", "was burned by the furnace"]}, "Industrial worker (Metals)": {"district": 2, "trivia": ["The four basic industrial processes are machining, joining, casting and moulding.", "Get going, the foreman's here today.", "These shipments of bauxite must be processed into aluminium tomorrow.", "I might be transferred to the steel refinery near Victor's village.", "I need some pig iron from that blast furnace to produce steel."], "pay": 2000, "die": ["touched a live wire and got burned", "was burned by molten steel", "was cut by the metal-cutter"]}, "Coder": {"district": 3, "trivia": ["In the python language, there is no ;", "Hey StackOverflow, how to fix this bug?", "The cyclomatic complexity for this code is too high!", "I can't seem to figure out where the bug is!", "Ugh, this computer's so laggy, wish we have those newfangled Intiums from the Capitol."], "pay": 2000, "die": ["got locked in a freezing server farm", "touched a live wire", "had a server fall on yourself"]}, "Industrial worker (Electronics)": {"district": 3, "trivia": ["Water used in chip fabrication must be pH 7.", "They say the chips we make are used in robots of war.", "Send these new computers to the loading bay.", "I think we're getting a shipment of silicon tomorrow.", "Oi, make sure the server farm is kept cool enough!"], "pay": 2000, "die": ["cut yourself badly when installing the new laser-cutting machine", "was poisoned by hexavalent chromium", "touched a live wire"]}, "Fisherman": {"district": 4, "trivia": ["Fish commonly found in Panem are tilapia and panfish.", "Who let a cat on board?", "Get away, there's a shark!", "Can you help me fix this net please?"], "pay": 1500, "die": ["fell into the water and was stung by a jellyfish", "was bitten by a shark", "sprained your arm trying to haul in a huge tuna"]}, "Mechanic": {"district": 4, "trivia": ["This fishing trawler needs a repaint.", "Look what just rolled into the shop.", "Hey, this propeller is in really bad shape", "Let's hope Jerard's happy with this repair, resources are really strained at the moment."], "pay": 2000, "die": ["inhaled toxic paint vapor by accident", "touched a live wire", "was hurt by a spinning boat propeller"]}, "Industrial worker (Energy)": {"district": 5, "trivia": ["A step-down transformer reduces voltage.", "Electric coverage in Panem has evolved shockingly over the years.", "Go and replace solar panel 4, I think it's broken.", "Can you help me install this new control unit?", "District 3's been using too much energy lately."], "pay": 2000, "die": ["touched a live wire and got burned", "fell from a tower", "were cut by barbed wire"]}, "Electrical engineer": {"district": 5, "trivia": ["Power equals to current times voltage.", "Have you tried turning it off and on again?", "Man, these new wires are heavy", "Guess I'll have to pull overtime again, trying to figure out what's wrong with the new power plant."], "pay": 3000, "die": ["accidentally left a switch open and zapped yourself", "cut yourself with barbed wire", "touched a live wire and died"]}, "Transport officer": {"district": 6, "trivia": ["Papers, please.", "Glory to the Capitol.", "What are you going to District 7 for?", "Holup, this travel pass looks like a fake.", "That guy has morphling in his bag. Seize him."], "pay": 2000, "die": ["was shot by a Peacekeeper for accidentally letting a rebel through", "were pushed onto the tracks", "were hit by a bus"]}, "Transport Engineer": {"district": 6, "trivia": ["Magnetic levitation trains are energy efficient and fast.", "Funny how we build electric cars all day but still have to walk to work.", "Something's wrong with that hovercraft's right motor.", "This train engine is full of dust! No wonder it broke down.", "Try to salvage something from this decomissioned train."], "pay": 3000, "die": ["touched a live wire and got electrocuted", "were pushed onto the tracks", "were hit by a bus"]}, "Lumberjack": {"district": 7, "trivia": ["Alright, get your chainsaw and cut that tree over there.", "I need to get a new checkered shirt.", "Oh crap, my saw's broken.", "We've got an order for 100kg of pine wood.", "Can you help me fix this chainsaw?"], "pay": 2000, "die": ["cut a tree the wrong way which caused it to fall right onto your head", "cut yourself with a chainsaw", "fell into a hole"]}, "Saw mill worker": {"district": 7, "trivia": ["Ironwood planks are extremely durable.", "How much wood can a woodchuck chuck if a woodchuck could chuck wood?", "Never gonna give you up, never gonna let you down, never gonna run around and desert you :)", "We've got an order for 100 planks.", "Help me fix this sawmill."], "pay": 2000, "die": ["cut yourself with an electric saw by accident", "went through the sawmill", "had a log roll over you"]}, "Industrial worker (Textiles)": {"district": 8, "trivia": ["These bedsheets look so comfy.", "There's so much cotton in here... Achoo!", "I love the colour of those lime green dyes.", "Handle that vat of dye properly.", "Too bad we can't use any of the cloth we're making for our clothes."], "pay": 2000, "die": ["succumbed to dye poisoning", "ingested toxic dye", "fell into the dyeing chamber"]}, "Peacekeeper uniform seamstress": {"district": 8, "trivia": ["Peacekeeper armour is made from Kevlar.", "Don't forget to pad the insides.", "Make sure the uniforms are all spick and span", "Only armourweave, rubber and Kevlar are used for Peacekeeper uniforms.", "These helmets are really freaky."], "pay": 3000, "die": ["pricked your wrist by accident", "messed up on a batch and was beaten up by a Peacekeeper", "cut yourself with scissors"]}, "Wheat farmer": {"district": 9, "trivia": ["There are 20 types of wheat.", "I'm so hungry I could eat the dough out of the vat.", "Why isn't this tractor working?", "High grade wheat goes to the Capitol.", "Spray some of that insecticide here, I want to be rid of those hideous bugs."], "pay": 1500, "die": ["fell into a wheat processing machine LOL", "was run over by a tractor"]}, "Baker": {"district": 9, "trivia": ["Zymase is produced by yeast to make bread rise.", "Baguettes for District 1 unleavened for District 12.", "Mmmmmm, these doughnuts smell great!", "It's odd how we produce so much bread but don't eat much of them.", "We don't have enough yeast, what do we do?"], "pay": 2000, "die": ["nearly had your fingers cut off by the bread-cutting machine", "fell into a vat", "fell into the bread-cutting machine"]}, "Cattle farmer": {"district": 10, "trivia": ["If a cow isn't milked for too long, its udder will burst.", "Wait, you're telling me a cowboy doesn't herd cows?", "Male cows produce more beef; female cows produce milk", "Herd those heifers into Area 4.", "Pasteurise the milk at 72C."], "pay": 2000, "die": ["was charged at by a bull", "fell into cow dung", "was trampled under a stampede of cows"]}, "Meatpacker": {"district": 10, "trivia": ["Meat must conform to A34 standards set by the Capitol.", "I can't stand WcBonalds or PFC anymore.", "We've got an order for 100kg of beef.", "Process this load of beef into sausages.", "It's odd that we produce so much beef but still starve everyday."], "pay": 2000, "die": ["nearly cut your hand off", "fell into the meat grinder", "cut yourself with a chopper"]},"Orchard Farmer": {"district": 11, "trivia": ["Pick those apples from that tree/", "This tree needs some pruning.", "Can you help me fix this pickup truck?", "Send these oranges to loading bay 4.", "The pear orchard is estimated to begin production next year."], "pay": 2000, "die": ["fell from a ladder", "was hit by a truck", "fell from a maple tree"]}, "Fruitpacker": {"district": 11, "trivia": ["Fruit must conform to A34 standards set by the Capitol.", "Send oranges to the Capitol, apples to District 8.", "Fruit must be waxed before being packaged", "Mmmmm, these mangoes smell so fragrant, it's a shame we can't eat any of them.", "Help me fix this waxing machine."], "pay": 2000, "die": ["fell into an automatic fruit-cutting machine", "fell into the fruit-waxer", "cut yourself with a chopper"]}, "Coal miner": {"district": 12, "trivia": ["Make sure there are no stray pieces of coal on the minecart rails.", "Coal mining is a dangerous job.", "Make sure you wear your mask properly, I don't want you to die from lung cancer.", "Get this cart working.", "We're going to be mining coal from Deposit 3A today."], "pay": 1500, "die": ["died in a mineshaft cave-in", "was run over by a minecart", "contracted lung disease"]}, "Mining engineer": {"district": 12, "trivia": ["Explosives must be used sparingly.", "We gotta fix this tunneling machine.", "Get that dynamite over here.", "Send this huge load of coal to loading bay 4.", "Don't go into that shaft, the toxicity level is way too high."], "pay": 1800, "die": ["accidentally blew yourself up with dynamite", "was run over by a minecart", "had a shaft collapse on you"]}}
 
 @client.command(aliases = ['inv', 'Inventory'])
 async def inventory(ctx):
-  em=discord.Embed(title=f'Inventory stats for {ctx.author.name}', description=f'Type {prefix(client, ctx.message)}shop <item> to get information for a specific product.', color=random.choice(colors))
+  em=discord.Embed(title=f'Inventory stats for {ctx.author.name}', description=f'Type h.shop <item> to get information for a specific product.', color=random.choice(colors))
   em.set_thumbnail(url=ctx.author.avatar_url)
 
   with open('inventory.json', 'r') as f:
@@ -922,7 +870,7 @@ async def work(ctx):
     elif district != worklist[worka]["district"]:
       await ctx.send('Go back to your home district! You are of no use here!')
   else:
-    await ctx.send(f'Go get a job to contribute to the great nation of Panem. Type `{prefix(client, ctx.message)}job` to find one. Note: You can only obtain a job that exists in your district. Use the `{prefix(client, ctx.message)}joblist` command to get a list of jobs.')
+    await ctx.send(f'Go get a job to contribute to the great nation of Panem. Type `h.job` to find one. Note: You can only obtain a job that exists in your district. Use the `h.joblist` command to get a list of jobs.')
 
 @client.command(aliases = ['Job'])
 async def job(ctx, arg1):
@@ -941,18 +889,18 @@ async def job(ctx, arg1):
       else:
         await ctx.send(f'The job you are applying for ({work}) is not available in your district.')
   except ValueError:
-    await ctx.send(f'Please specify the index of the job according to the joblist command.\nExample: {prefix(client, ctx.message)}job 2')
+    await ctx.send(f'Please specify the index of the job according to the joblist command.\nExample: h.job 2')
   except IndexError:
     await ctx.send('The job you are trying to apply for does not exist!')
 
 @job.error
 async def job_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify the index of the job according to the joblist command.\nExample: {prefix(client, ctx.message)}job 2')
+    await ctx.send(f'Please specify the index of the job according to the joblist command.\nExample: h.job 2')
 
 @client.command(aliases = ['Joblist'])
 async def joblist(ctx):
-    em = discord.Embed(title='Showing jobs available', description=f'Get a job by typing `{prefix(client, ctx.message)}job <1>`.', color=random.choice(colors))
+    em = discord.Embed(title='Showing jobs available', description=f'Get a job by typing `h.job <1>`.', color=random.choice(colors))
     templist = list(worklist)
     for item in worklist:
       em.add_field(name=f'{templist.index(item)+1}. {item}', value=f'District: {str(worklist[item]["district"])} | Pay: ${str(worklist[item]["pay"])}', inline=True)
@@ -1014,7 +962,7 @@ async def will(ctx, member: discord.Member):
     val = json.load(f)
   
   if str(member.id) not in val:
-    await ctx.send(f'Please ask your friend to create an account by typing `{prefix(client, ctx.message)}create` first!')
+    await ctx.send(f'Please ask your friend to create an account by typing `h.create` first!')
   elif str(member.id) == str(ctx.author.id):
     await ctx.send("You can't use your acccount as your successor.")
   else:
@@ -1029,7 +977,7 @@ async def will(ctx, member: discord.Member):
 @will.error
 async def will_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify the user you want to include in your will.\nExample: {prefix(client, ctx.message)}will @Andrea')
+    await ctx.send(f'Please specify the user you want to include in your will.\nExample: h.will @Andrea')
 
 @client.command(aliases = ['Fish'])
 @commands.cooldown(1, 15, commands.BucketType.user) 
@@ -1197,7 +1145,7 @@ async def hgame_error(ctx, error):
     with open('bank.json', 'r') as f:
       inv = json.load(f)
     if str(ctx.author.id) not in inv:
-      await ctx.send(f'Please create an account by typing `{prefix(client, ctx.message)}create`!')
+      await ctx.send(f'Please create an account by typing `h.create`!')
     else:
       await ctx.send("Slowpoke. The ship has sailed. Try again next time.")
 
@@ -1272,13 +1220,13 @@ async def give_error(ctx, error):
     with open('bank.json', 'r') as f:
       inv = json.load(f)
     if str(ctx.author.id) not in inv:
-      await ctx.send(f'Please create an account by typing `{prefix(client, ctx.message)}create` first!')
+      await ctx.send(f'Please create an account by typing `h.create` first!')
       return
     elif str(ctx.author.id) in inv:
-      await ctx.send(f'Please ask your friend to create an account by typing `{prefix(client, ctx.message)}create` first!')
+      await ctx.send(f'Please ask your friend to create an account by typing `h.create` first!')
       return
     else:
-      await ctx.send(f'Please specify the user you want to give stuff to and the item you are intending to give after the command.\nExample: {prefix(client, ctx.message)}give @Andrea 3 bow')
+      await ctx.send(f'Please specify the user you want to give stuff to and the item you are intending to give after the command.\nExample: h.give @Andrea 3 bow')
   elif isinstance(error, commands.MissingRequiredArgument):
     try:
       arg1 = ctx.message.content.split(" ")[2]
@@ -1304,9 +1252,9 @@ async def give_error(ctx, error):
         await ctx.send('The item you are trying to give does not exist!')
         return
       except IndexError:
-        await ctx.send(f'Please specify the user you want to give stuff to and the item you are intending to give after the command.\nExample: {prefix(client, ctx.message)}give @Andrea 3 bow')
+        await ctx.send(f'Please specify the user you want to give stuff to and the item you are intending to give after the command.\nExample: h.give @Andrea 3 bow')
     except:
-      await ctx.send(f'Please specify the user you want to give stuff to and the item you are intending to give after the command.\nExample: {prefix(client, ctx.message)}give @Andrea 3 bow')
+      await ctx.send(f'Please specify the user you want to give stuff to and the item you are intending to give after the command.\nExample: h.give @Andrea 3 bow')
 
 @client.command(aliases=['cd'])
 async def cooldown(ctx):
@@ -1345,7 +1293,7 @@ async def fact(ctx):
 @district.error
 async def district_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
-    await ctx.send(f'Please specify the district you want information for.\nExample: {prefix(client, ctx.message)}district 12')
+    await ctx.send(f'Please specify the district you want information for.\nExample: h.district 12')
 
 @client.command(aliases = ['latency', 'Ping'])
 async def ping(ctx):
@@ -1363,7 +1311,7 @@ async def help(ctx):
 
   em2 = discord.Embed(title='Showing a list of commands for Mockingjay', description='[Found a bug while playing? Join the official support server and report it!](https://discord.gg/CtAT7sDqxH)', color=random.choice(colors)).add_field(name="Travel to another district. If you have a travel pass, that is...", value="`travel <district number>`", inline=False).add_field(name="Eat items to restore your HP", value="`eat <item name>`", inline=False).add_field(name="Shows a list of stuff you can buy.", value="`shop`", inline=False).add_field(name="Contribute your labor to Panem! You will be assigned to conduct a dangerous mission. If you survive, you get paid a handsome amount of cash and maybe a travel pass or two", value="`service`", inline=False).add_field(name="View command cooldowns", value="`cooldown` or `cd`", inline=False).set_thumbnail(url=client.user.avatar_url)
 
-  em4 = discord.Embed(title='Showing a list of commands for Mockingjay', description='The feature that took the longest for the devs to create was hgame...', color=random.choice(colors)).add_field(name="Shows a map of Panem", value="`map`", inline=False).add_field(name="Get the latency of the bot.", value="`ping`", inline=False).add_field(name="Get some fun facs about the Hunger Games universe.", value="`facts`", inline=False).add_field(name="Get the latency of the bot.", value="`ping`", inline=False).add_field(name="Get the invite link for this bot", value="`invite`", inline=False).add_field(name="Get to know the people who have worked hard to bring you this bot.", value="`credits`", inline=False).add_field(name="Change the server prefix", value="`prefix`", inline=False).set_thumbnail(url=client.user.avatar_url)
+  em4 = discord.Embed(title='Showing a list of commands for Mockingjay', description='The feature that took the longest for the devs to create was hgame...', color=random.choice(colors)).add_field(name="Shows a map of Panem", value="`map`", inline=False).add_field(name="Get the latency of the bot.", value="`ping`", inline=False).add_field(name="Get some fun facs about the Hunger Games universe.", value="`facts`", inline=False).add_field(name="Get the latency of the bot.", value="`ping`", inline=False).add_field(name="Get the invite link for this bot", value="`invite`", inline=False).add_field(name="Get to know the people who have worked hard to bring you this bot.", value="`credits`", inline=False).set_thumbnail(url=client.user.avatar_url)
 
   em3 = discord.Embed(title='Showing a list of commands for Mockingjay', description='This bot was initially created using Repl.it and hosted on Heroku upon completion.', color=random.choice(colors)).add_field(name="Start an interactive Hunger Games session", value="`hgame`", inline=False).add_field(name="View stats for your account.", value="`profile`", inline=False).add_field(name="Create an account", value="`create`", inline=False).add_field(name="Add someone as your successor. When you die, 70% of your wealth will be given to them.", value="`will <@someone>`", inline=False).add_field(name="View your global ranking for wealth.", value="`leaderboard` or `lb`", inline=False).add_field(name="Get information for a certain district", value="`district <district number>`", inline=False).set_thumbnail(url=client.user.avatar_url)
   
