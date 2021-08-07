@@ -361,12 +361,9 @@ async def devs(ctx):
     with open('inventory.json', 'r') as f:
       b = json.load(f)
 
-    with open('prefixes.json', 'r') as f:
-      c = json.load(f)
-
     em = discord.Embed(title='Stats for Mockingjay', description='Developer-only feature!', color=random.choice(colors))
     em.add_field(name='No. of users', value=len(a), inline=False)
-    em.add_field(name='No. of servers', value=len(c), inline=False)
+    em.add_field(name='No. of servers', value=len(client.guilds), inline=False)
     print(a)
     print('----------------------------------------------------')
     print(b)
