@@ -368,7 +368,6 @@ async def devs(ctx):
     print('----------------------------------------------------')
     print(b)
     print('----------------------------------------------------')
-    print(c)
     await ctx.send(embed=em)
 
 @client.command()
