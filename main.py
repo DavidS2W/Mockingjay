@@ -5,10 +5,15 @@ import asyncio
 import json
 import time
 from disputils import BotEmbedPaginator
+import pymongo
 
 intents = discord.Intents().all()
 
 client = commands.Bot(command_prefix="h.", intents = intents)
+mongoclient = pymongo.MongoClient("mongodb+srv://davidswsim:ds2wds2w@ds2w-clusters.7sbca.mongodb.net/DS2W-Clusters?retryWrites=true&w=majority")
+mydb = mongoclient["Mockingjay"]
+inv_file = mydb["inventory"]
+bank_file = mydb["bankdata"]
 
 colors = [0x1abc9c, 0x11806a, 0x2ecc71, 0x1f8b4c, 0x3498db, 0x206694]
 
@@ -54,6 +59,11 @@ async def on_ready():
     print('We are now logged in as {0.user}'.format(client))
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f'h.help | In  {len(client.guilds)} servers!'))
 
+def proper_name(product):
+  for item in products:
+    if product.lower() == item["name"].lower():
+      return(item["name"])
+
 def icon(product):
   for item in products:
     if product.lower() == item["name"].lower():
@@ -77,14 +87,17 @@ async def on_command_error(ctx, error):
     if ctx.message.content.startswith(f'h.give') or ctx.message.content.startswith(f'h.profile') or ctx.message.content.startswith(f'h.hgame') or ctx.message.content.startswith(f'h.buy'):
       pass
     else:
-      with open('bank.json', 'r') as f:
-        b = json.load(f)
-      if str(ctx.author.id) in b:
+      def available(member):
+        try:
+          bank_file.find_one({"_id": member.id})
+          return(1)
+        except:
+          return(0)
+      if available(ctx.author) == 1:
         await ctx.send(':warning: Something went wrong.\nYou may have specified invalid arguments.')
         raise error
       else:
         await ctx.send(f'Please create an account by typing `h.create`!')
-        raise error
   elif isinstance(error, commands.CommandOnCooldown):
     await ctx.send(f':snowflake: You are on cooldown, please try again in {timecon(round(error.retry_after))}')
   else:
@@ -98,10 +111,8 @@ def check_item_price(product):
       pass
 
 def afford(author, price, walbank):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
-
-  networth = val[str(author.id)][walbank] 
+  f = bank_file.find_one({"_id": author.id})
+  networth = f[walbank]
 
   if networth < price:
     return(0)
@@ -109,30 +120,25 @@ def afford(author, price, walbank):
     return(1)
 
 def author_info(author, category):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
+  f = bank_file.find_one({"_id": author.id})
 
-  info = val[str(author.id)][category]
+  info = f[category]
 
   return(info)
 
 def check_item_value(author, name):
-  with open('inventory.json', 'r') as f:
-    val = json.load(f)
-
-  inv = val[str(author.id)]
-
-  for item in inv:
-    if item["name"].lower() == name.lower():
-      return(item["value"])
+  val = inv_file.find_one({"_id": author.id})
+  vale = list(val)
+  for item in vale:
+    if item.lower() == name.lower():
+      return(val[item])
     else:
       pass
 
 def check_item_district(author, name):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
+  val = bank_file.find_one({"_id": author.id})
 
-  dnum = val[str(author.id)]["district"]
+  dnum = val["district"]
 
   for item in products:
     if item["name"].lower() == name.lower() and item["district"] == dnum:
@@ -148,141 +154,71 @@ def productlist_info(arg1):
       return(item)
 
 async def create_account(author):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
 
   dnum = random.randint(1, 12)
 
-  val[str(author.id)] = {"bank": 1000, "wallet": 2000, "district": dnum, "residence": dnum, "HP": 100, "job": "Nil", "successor": "Nil"}
+  bank_file.insert_one({"_id": author.id, "bank": 1000, "wallet": 2000, "district": dnum, "residence": dnum, "HP": 100, "job": "Nil", "successor": "Nil"})
 
-  with open('bank.json', 'w') as f:
-    json.dump(val, f, indent=4)
-
-  with open('inventory.json', 'r') as f:
-    inv = json.load(f)
-
-  inv[str(author.id)] = []
-  y = inv[str(author.id)]
+  inv_file.insert_one({"_id": author.id})
   for item in products:
-    temp = {"name": item["name"], "value": 0}
-    y.append(temp)
-  with open('inventory.json', 'w') as f:
-    json.dump(inv, f, indent=4)
+    inv_file.update_one({"_id": author.id}, {"$set": {item["name"]: 0}})
 
 async def hp_change(author, value):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
+  info = bank_file.find_one({"_id": author.id})
 
-  val[str(author.id)]["HP"] =  val[str(author.id)]["HP"] + value
-
-  with open('bank.json', 'w') as f:
-    json.dump(val, f, indent=4)
+  initial_hp = info["HP"]
+  final_hp = initial_hp + value
+  bank_file.update_one({"_id": author.id}, {"$set": {"HP": final_hp}})
 
 async def district_change(author, value):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
-
-  val[str(author.id)]["district"] =  value
-
-  with open('bank.json', 'w') as f:
-    json.dump(val, f, indent=4)
+  bank_file.update_one({"_id": author.id}, {"$set": {"district": value}})
 
 async def job_change(author, value):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
-
-  val[str(author.id)]["job"] =  value
-
-  with open('bank.json', 'w') as f:
-    json.dump(val, f, indent=4)
+  bank_file.update_one({"_id": author.id}, {"$set": {"job": value}})
 
 async def money_change(author, value, walbank):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
+  initial_cash = bank_file.find_one({"_id": author.id})[walbank]
 
-  val[str(author.id)][walbank] = val[str(author.id)][walbank] + value
+  final_cash = initial_cash + value
 
-  with open('bank.json', 'w') as f:
-    json.dump(val, f, indent=4)
+  bank_file.update_one({"_id": author.id}, {"$set": {walbank: final_cash}})
 
 async def sello(author, price, itema):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
-
-  val[str(author.id)]["wallet"] = val[str(author.id)]["wallet"] + price
-
-  with open('bank.json', 'w') as f:
-    json.dump(val, f, indent=4)
-    
-  with open('inventory.json', 'r') as f:
-    inv = json.load(f)
-
-  initinv = inv[str(author.id)]
-
-  for item in initinv:
-    if itema.lower() == item["name"].lower():
-      item["value"] = item["value"] - 1
-    else:
-      pass
-
-  with open('inventory.json', 'w') as f:
-    json.dump(inv, f, indent=4)
+  await money_change(author, price, "wallet")
+  item_name = proper_name(itema)
+  initial_value = inv_file.find_one({"_id": author.id})[item_name]
+  inv_file.update_one({"_id": author.id}, {"$set": {item_name: initial_value - 1}})
 
 async def useo(author, itema):
-  with open('inventory.json', 'r') as f:
-    inv = json.load(f)
-
-  initinv = inv[str(author.id)]
-
-  for item in initinv:
-    if itema.lower() == item["name"].lower():
-      item["value"] = item["value"] - 1
-    else:
-      pass
-
-  with open('inventory.json', 'w') as f:
-    json.dump(inv, f, indent=4)
-
+  itemname = proper_name(itema)
+  initial_value = inv_file.find_one({"_id": author.id})[itemname]
+  inv_file.update_one({"_id": author.id}, {"$set": {itemname: initial_value - 1}})
+  
 async def buyo(author, price, itema):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
-
-  val[str(author.id)]["wallet"] = val[str(author.id)]["wallet"] - price
-
-  with open('bank.json', 'w') as f:
-    json.dump(val, f, indent=4)
-    
-  with open('inventory.json', 'r') as f:
-    inv = json.load(f)
-
-  initinv = inv[str(author.id)]
-
-  for item in initinv:
-    if itema.lower() == item["name"].lower():
-      item["value"] = item["value"] + 1
-    else:
-      pass
-
-  with open('inventory.json', 'w') as f:
-    json.dump(inv, f, indent=4)
+  item_name = proper_name(itema)
+  await money_change(author, -1*price, "wallet")
+  initial_value = inv_file.find_one({"_id": author.id})[item_name]
+  inv_file.update_one({"_id": author.id}, {"$set": {item_name: initial_value + 1}})
 
 async def dying(author, message):
   hp = author_info(author, "HP")
   cash = author_info(author, "wallet")
   bank = author_info(author, "bank")
 
-  bankdata = round(0.7*(cash+bank))
+  bankdata = round(0.7*cash+0.7*bank)
   sidone = author_info(author, "successor")
   if hp <= 0:
     if sidone != 'Nil':
       sid = author_info(author, "successor")["id"]
       user = await client.fetch_user(sid)
+      await money_change(author, round(-0.7*bank), "bank")
+      await money_change(author, round(-0.7*cash), "wallet")
       await money_change(user, bankdata, "bank")
-      await money_change(author, -1*bankdata, "bank")
       await message.channel.send(f'{user.mention} you have received ${bankdata} from {author.mention} because he/she died. Spend it well.')
       await hp_change(author, abs(hp)+200)
     else:
-      await money_change(author, -1*(cash+bank), "bank")
+      await money_change(author, round(-0.7*bank), "bank")
+      await money_change(author, round(-0.7*cash), "wallet")
       await message.channel.send(f'{author.mention} you have lost ${bankdata} from your account because you died. Oof.')
       await hp_change(author, abs(hp)+200)
   else:
@@ -293,21 +229,21 @@ async def dyinga(author, message):
   cash = author_info(author, "wallet")
   bank = author_info(author, "bank")
 
-  bankdata = round(0.7*(cash+bank))
+  bankdata = round(0.7*cash+0.7*bank)
   sidone = author_info(author, "successor")
   if hp <= 0:
     if sidone != 'Nil':
       sid = author_info(author, "successor")["id"]
       user = await client.fetch_user(sid)
+      await money_change(author, round(-0.7*bank), "bank")
+      await money_change(author, round(-0.7*cash), "wallet")
       await money_change(user, bankdata, "bank")
-      await money_change(author, -1*bankdata, "bank")
       await message.channel.send(f'{user.mention} you have received ${bankdata} from {author.mention} because he/she died. Spend it well.')
-      return
       await message.channel.send('You have died and lost the hunger games.')
     else:
-      await money_change(author, -1*(cash+bank), "bank")
+      await money_change(author, round(-0.7*bank), "bank")
+      await money_change(author, round(-0.7*cash), "wallet")
       await message.channel.send(f'{author.mention} you have lost ${bankdata} from your account because you died. Oof.')
-      return
       await message.channel.send('You have died and lost the hunger games.')
   else:
     pass
@@ -351,26 +287,6 @@ async def credits(ctx):
   await ctx.send(embed=em)
 
 @client.command()
-async def devs(ctx):
-  if ctx.author.id != 746646972483502140:
-    await ctx.send('You do not have permission to use this feature!')
-  else:
-    with open('bank.json', 'r') as f:
-      a = json.load(f)
-    
-    with open('inventory.json', 'r') as f:
-      b = json.load(f)
-
-    em = discord.Embed(title='Stats for Mockingjay', description='Developer-only feature!', color=random.choice(colors))
-    em.add_field(name='No. of users', value=len(a), inline=False)
-    em.add_field(name='No. of servers', value=len(client.guilds), inline=False)
-    print(a)
-    print('----------------------------------------------------')
-    print(b)
-    print('----------------------------------------------------')
-    await ctx.send(embed=em)
-
-@client.command()
 async def lolol(ctx):
   await ctx.send('PRIME DIFFERENCE BETWEEN ELEMENTS RESPONSIBLE FOR HIROSHIMA AND NAGASAKI')
   
@@ -397,11 +313,8 @@ async def shop_error(ctx, error):
 
 @client.command(aliases = ['Create'])
 async def create(ctx):
-  with open('bank.json', 'r') as f:
-    b = json.load(f)
-
-  if str(ctx.author.id) not in b:
-    pref = "h."
+  pref = "h."
+  try:
     await create_account(ctx.author)
     await ctx.send('Account created! Please check your DMS for a quick guide to this bot!')
     em = discord.Embed(title='A quick guide to the Mockingjay Discord bot', description='[Click this link to join the support server and get some rewards](https://discord.gg/SptuDpcvrX)', color=random.choice(colors))
@@ -413,12 +326,12 @@ async def create(ctx):
     em.add_field(name=f'6. Use the {pref}hgame command, if you want to risk it.', value='You can join interactive Hunger Games sessions once in a while. Make sure your knowledge of the Hunger Games books and films are stitched up tight!', inline=False)
     em.set_footer(text='Bot created by AnakinSkywaler#3739', icon_url=client.user.avatar_url)
     await ctx.author.send(embed=em)
-  else:
+  except:
     await ctx.send('You already have an account!')
 
 @client.command(aliases=['Invite'])
 async def invite(ctx):
-  em = discord.Embed(title='Hit this link to invite me to your server!', description = 'https://discord.com/api/oauth2/authorize?client_id=855240212800339978&permissions=259846044736&scope=bot', color=random.choice(colors))
+  em = discord.Embed(title='Hit this link to invite me to your server!', description = 'https://discord.com/api/oauth2/authorize?client_id=872637231842611261&permissions=8&scope=bot', color=random.choice(colors))
   em.set_thumbnail(url=client.user.avatar_url)
   await ctx.send(embed=em)
 
@@ -446,14 +359,14 @@ async def buy(ctx, arg1, *, product):
 async def buy_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
     await ctx.send(f'Please specify the item you want to buy after the buy command.\nExample: h.buy 3 bow')
+    print(2)
   else:
-    with open('bank.json', 'r') as f:
-        b = json.load(f)
-    if str(ctx.author.id) in b:
+    try:
+      bank_file.find_one({"_id": ctx.author.id})
       await ctx.send(f'Please specify the all of the required arguments after the command.\nExample: h.buy 3 bow')
-    else:
+    except:
       await ctx.send(f'Please create an account by typing `h.create`!')
-
+      
 @client.command(aliases = ['Hunt'])
 @commands.cooldown(1, 10, commands.BucketType.user) 
 async def hunt(ctx):
@@ -486,9 +399,7 @@ async def hunt(ctx):
 
 @client.command(aliases=['Profile', 'user', 'User'])
 async def profile(ctx, user: discord.Member):
-    with open('bank.json', 'r') as f:
-      bank = json.load(f)
-    stat = bank[str(user.id)]
+    stat = bank_file.find_one({"_id": user.id})
     em = discord.Embed()
     em.title=f'{user.name}, here are your stats!'
     em.color = random.choice(colors)
@@ -509,9 +420,7 @@ async def profile(ctx, user: discord.Member):
 async def profile_error(ctx, error):
   if isinstance(error, commands.MissingRequiredArgument):
     try:
-      with open('bank.json', 'r') as f:
-        bank = json.load(f)
-      stat = bank[str(ctx.author.id)]
+      stat = bank_file.find_one({"_id": ctx.author.id})
       em = discord.Embed()
       em.title=f'{ctx.author.name}, here are your stats!'
       em.color = random.choice(colors)
@@ -530,11 +439,16 @@ async def profile_error(ctx, error):
     except:
       await ctx.send(f'Please create an account by typing `h.create` first!')
   elif isinstance(error, commands.CommandInvokeError):
-    with open('bank.json', 'r') as f:
-      inv = json.load(f)
-    if str(ctx.author.id) not in inv:
+    def availability(ctx):
+      try:
+        bank_file.find_one({"_id": ctx.author.id})
+        return(1)
+      except:
+        return(0)
+        
+    if availability(ctx) == 1:
       await ctx.send(f'Please create an account by typing `h.create` first!')
-    elif str(ctx.author.id) in inv:
+    else:
       await ctx.send(f'Please ask your friend to create an account by typing `h.create` first!')
 
 @client.command(aliases = ['Travel'])
@@ -564,7 +478,7 @@ async def travel(ctx, arg1):
     if shield >= 1 or armour >= 1:
       ratetwo = random.randint(1, 20)
       await hp_change(ctx.author, -1*ratetwo)
-      await useo(ctx.author, "travel_pass")
+      await useo(ctx.author, "travel pass")
       em = discord.Embed(title=f"Uh oh... You've run into some Peacekeepers by accident. You put up a good fight and managed to get away, but they've confiscated your :page_facing_up: travel pass and your HP has decreased by {ratetwo}", description='Better luck travelling next time!', color=random.choice(colors))
       em.set_thumbnail(url='https://static.wikia.nocookie.net/thehungergames/images/e/e5/2peacekeepersCF.png/revision/latest/scale-to-width-down/547?cb=20130415223924')
       await ctx.send(embed=em)
@@ -817,11 +731,17 @@ async def inventory(ctx):
   em=discord.Embed(title=f'Inventory stats for {ctx.author.name}', description=f'Type h.shop <item> to get information for a specific product.', color=random.choice(colors))
   em.set_thumbnail(url=ctx.author.avatar_url)
 
-  with open('inventory.json', 'r') as f:
-    inv = json.load(f)
+  inv_dict = inv_file.find_one({"_id": ctx.author.id})
+  inv_list = list(inv_dict)
+  
+  initinv = []
 
-  initinv = inv[str(ctx.author.id)]
-
+  for item in inv_list:
+    if item != "_id":
+      initinv.append({"name": item, "value": inv_dict[item]})
+    else:
+      pass
+      
   for item in initinv:
     if item["value"] != 0:
       em.add_field(name=f'{icon(item["name"].lower())} {item["name"]}', value=item["value"], inline=True)
@@ -954,20 +874,19 @@ async def service(ctx):
 
 @client.command(aliases = ['Will'])
 async def will(ctx, member: discord.Member):
-  with open('bank.json', 'r') as f:
-    val = json.load(f)
+  def available(member):
+    try:
+      bank_file.find_one({"_id": member.id})
+      return(1)
+    except:
+      return(0)
   
-  if str(member.id) not in val:
+  if available(member) == 0:
     await ctx.send(f'Please ask your friend to create an account by typing `h.create` first!')
   elif str(member.id) == str(ctx.author.id):
     await ctx.send("You can't use your acccount as your successor.")
   else:
-
-    val[str(ctx.author.id)]["successor"] =  {"name": member.name, "id": member.id}
-
-    with open('bank.json', 'w') as f:
-      json.dump(val, f, indent=4)
-  
+    bank_file.update_one({"_id": ctx.author.id}, {"$set": {"successor": {"name": member.name, "id": member.id}}})
     await ctx.send(f'When you die, 70% of your wealth will be given to {member} as well as some of your items.')
 
 @will.error
@@ -1138,9 +1057,13 @@ async def hgame(ctx):
 @hgame.error
 async def hgame_error(ctx, error):
   if isinstance(error, commands.CommandInvokeError):
-    with open('bank.json', 'r') as f:
-      inv = json.load(f)
-    if str(ctx.author.id) not in inv:
+    def available(member):
+      try:
+        bank_file.find_one({"_id": member.id})
+        return(1)
+      except:
+        return(0)
+    if available(ctx.author) == 0:
       await ctx.send(f'Please create an account by typing `h.create`!')
     else:
       await ctx.send("Slowpoke. The ship has sailed. Try again next time.")
@@ -1173,27 +1096,39 @@ def author_rank(author):
     else:
       pass
 
+@client.command()
+async def asd(ctx):
+  a = await client.fetch_user(849841146284736512)
+  await create_account(a)
+  
 @client.command(aliases=['lb'])
 async def leaderboard(ctx):
-  with open('bank.json', 'r') as f:
-    b = json.load(f)
-  templist = []
-  for item in b:
-    wal = b[item]["wallet"] + b[item]["bank"]
-    templist.append(wal)
-  templist.sort(reverse=True)
-  em = discord.Embed(title='Showing global rankings for wealth', description=f'Your rank: `{author_rank(ctx.author)}`', color=random.choice(colors))
-  for item in range(5):
-    for author in b:
-      try:
-        worth = b[author]["wallet"] + b[author]["bank"]
-        if worth == templist[item]:
-          name = await client.fetch_user(int(author))
-          em.add_field(name=f'{str(item + 1)}. {name}' , value=f'Total wealth: ${worth}', inline=False)
+  all_b = bank_file.find({})
+  maindict = {}
+  for item in all_b:
+    networth_one = item["bank"] + item["wallet"]
+
+    networth_two = []
+
+    a = inv_file.find_one({"_id": item["_id"]})
+    b = list(a)
+    b.remove("_id")
+    for itema in b:
+      if a[itema] != 0:
+        p = check_item_price(itema)
+        if isinstance(p, int) == True:
+          networth_two.append(p*a[itema])
         else:
           pass
-      except IndexError:
-        pass
+    username = await client.fetch_user(item["_id"])
+    maindict[f'{username.name}#{username.discriminator}'] = sum(networth_two) + networth_one
+  sorted_dict = dict(sorted(maindict.items(), key=lambda item: item[1]))
+  totalusers = list(sorted_dict)
+  totalusers.reverse()
+  em = discord.Embed(title='Showing global rankings for net worth', description=f"There are a total of {len(totalusers)} users in the database.", color=random.choice(colors))
+  for item in totalusers:
+    rank = totalusers.index(item)+1
+    em.add_field(name=f'{rank}. {item}', value=sorted_dict[item], inline=False)
   await ctx.send(embed=em)
 
 @client.command(aliases = ['Give'])
@@ -1213,12 +1148,16 @@ async def give(ctx, user: discord.Member, arg2, *, arg1):
 @give.error
 async def give_error(ctx, error):
   if isinstance(error, commands.CommandInvokeError):
-    with open('bank.json', 'r') as f:
-      inv = json.load(f)
-    if str(ctx.author.id) not in inv:
+    def available(member):
+      try:
+        bank_file.find_one({"_id": member.id})
+        return(1)
+      except:
+        return(0)
+    if available(ctx.author) == 0:
       await ctx.send(f'Please create an account by typing `h.create` first!')
       return
-    elif str(ctx.author.id) in inv:
+    elif available(ctx.author) == 1:
       await ctx.send(f'Please ask your friend to create an account by typing `h.create` first!')
       return
     else:
